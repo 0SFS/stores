@@ -1,0 +1,31 @@
+/* Armament tab: the hung load, the bay doors, and jettison. */
+
+.flight-armament {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.flight-armament__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.flight-armament__station {
+  display: grid;
+  grid-template-columns: minmax(9rem, 1.4fr) minmax(8rem, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.flight-armament__station select {
+  min-width: 0;
+}
+
+.flight-armament label {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}

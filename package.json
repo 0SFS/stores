@@ -1,0 +1,51 @@
+{
+  "name": "@0sfs/stores",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hung stores for 0SFS: the F-35B armament catalog and panel.",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "exports": {
+    "./storeCatalog": {
+      "source": "./src/storeCatalog.ts",
+      "default": "./src/storeCatalog.ts"
+    },
+    "./stationTable": {
+      "source": "./src/stationTable.ts",
+      "default": "./src/stationTable.ts"
+    },
+    "./storeAttachment": {
+      "source": "./src/storeAttachment.ts",
+      "default": "./src/storeAttachment.ts"
+    },
+    "./createStoreVisuals": {
+      "source": "./src/createStoreVisuals.ts",
+      "default": "./src/createStoreVisuals.ts"
+    },
+    "./ArmamentPanel": {
+      "source": "./src/ArmamentPanel.tsx",
+      "default": "./src/ArmamentPanel.tsx"
+    },
+    "./persistedStores": {
+      "source": "./src/persistedStores.ts",
+      "default": "./src/persistedStores.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "peerDependencies": {
+    "@babylonjs/core": "8.56.2",
+    "react": "19.2.6"
+  },
+  "peerDependenciesMeta": {
+    "@babylonjs/core": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/0SFS/stores.git"
+  }
+}
