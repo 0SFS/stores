@@ -18,9 +18,21 @@
       "source": "./src/storeAttachment.ts",
       "default": "./src/storeAttachment.ts"
     },
+    "./bayGearInterlock": {
+      "source": "./src/bayGearInterlock.ts",
+      "default": "./src/bayGearInterlock.ts"
+    },
     "./createStoreVisuals": {
       "source": "./src/createStoreVisuals.ts",
       "default": "./src/createStoreVisuals.ts"
+    },
+    "./bayDoorGeometry": {
+      "source": "./src/bayDoorGeometry.ts",
+      "default": "./src/bayDoorGeometry.ts"
+    },
+    "./releasedStore": {
+      "source": "./src/releasedStore.ts",
+      "default": "./src/releasedStore.ts"
     },
     "./ArmamentPanel": {
       "source": "./src/ArmamentPanel.tsx",

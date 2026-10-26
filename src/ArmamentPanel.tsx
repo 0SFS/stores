@@ -9,10 +9,14 @@ import {
 
 export interface ArmamentPanelState {
   load: readonly (string | null)[];
+  /** "Rearm on the ground only": the pilot's setting, or a session rule. */
+  groundOnly: boolean;
   onGround: boolean;
   masterArm: boolean;
   bayCmd: readonly [number, number];
   bayPos: readonly [number, number];
+  /** An open asked for while the gear moves; the bay opens once the gear rests. */
+  bayQueued: readonly [boolean, boolean];
   /** Index by station. True when that station's external tank is attached. */
   tankOnStation: readonly boolean[];
 }
@@ -25,10 +29,15 @@ export interface ArmamentPanelProps {
   onMasterArm(armed: boolean): void;
 }
 
-/** The hung load. Changing it is a ground action with the master arm safe. Jettison is not. */
+/**
+ * The hung load. Changing it needs a safe master arm, and the wheels when
+ * rearm is ground only. Jettison and the bay doors work in the air either way;
+ * the doors wait for the landing gear to rest.
+ */
 export function ArmamentPanel({ state, onLoad, onJettison, onDoor, onMasterArm }: ArmamentPanelProps) {
   const context: RearmContext = {
-    onGround: state.onGround, masterArm: state.masterArm, tankOnStation: state.tankOnStation,
+    groundOnly: state.groundOnly, onGround: state.onGround, masterArm: state.masterArm,
+    tankOnStation: state.tankOnStation,
   };
   const blocked = rearmBlock(context);
   const mass = weaponMassLbs(state.load);
@@ -40,7 +49,8 @@ export function ArmamentPanel({ state, onLoad, onJettison, onDoor, onMasterArm }
     <div className="flight-armament">
       <p className="flight-panel__hint">
         {mass.toLocaleString("en-US")} lb of weapons, of {WEAPON_PAYLOAD_LIMIT_LBS.toLocaleString("en-US")} lb.
-        Rearm waits for the wheels and a safe master arm. Jettison only clears the station.
+        Rearm waits for {state.groundOnly ? "the wheels and " : ""}a safe master arm.
+        Jettison drops the store, armed or safe.
       </p>
       <div className="flight-armament__row">
         <label>
@@ -77,12 +87,14 @@ export function ArmamentPanel({ state, onLoad, onJettison, onDoor, onMasterArm }
       </div>
       <div className="flight-armament__row">
         {([0, 1] as const).map(bay => {
-          const open = (state.bayCmd[bay] ?? 0) >= 0.5;
+          const queued = state.bayQueued[bay] ?? false;
+          // A queued open counts as open: pressing again takes it back.
+          const open = queued || (state.bayCmd[bay] ?? 0) >= 0.5;
           const percent = Math.round(((state.bayPos[bay] ?? 0)) * 100);
           return (
             <button key={bay} type="button" aria-label={bay === 0 ? "Right bay door" : "Left bay door"}
               onClick={() => onDoor(bay, !open)}>
-              {bay === 0 ? "Right bay" : "Left bay"} {open ? "shut" : "open"} ({percent}%)
+              {bay === 0 ? "Right bay" : "Left bay"} {open ? "shut" : "open"} ({queued ? "waiting for the gear" : `${percent}%`})
             </button>
           );
         })}

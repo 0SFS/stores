@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { isPersistedStoreProperty, isWeaponStoreProperty } from "../src/persistedStores";
-import { STATIONS, stationDefinition, stationForFuelTank } from "../src/stationTable";
+import { STATIONS, STORE_MESH_FITS, stationDefinition, stationForFuelTank, storeMeshPlacement } from "../src/stationTable";
 import {
   STORE_CARDS, assessPieces, emptyLoad, loadFromPreset, loadRefusal, rearmRefusal,
-  storeByKey, weaponMassLbs, withStation, type RearmContext,
+  storeByKey, storesForStation, weaponMassLbs, withStation, type RearmContext,
 } from "../src/storeCatalog";
 
-const GROUND: RearmContext = { onGround: true, masterArm: false };
+const GROUND: RearmContext = { groundOnly: false, onGround: true, masterArm: false };
 
 describe("F-35B station table", () => {
   it("keeps the tanks on pointmasses 0 and 1 and mirrors the wing", () => {
@@ -24,6 +24,32 @@ describe("F-35B station table", () => {
     }
     expect(stationDefinition(5)?.ratingLbs).toBe(350);
     expect(stationDefinition(6)?.ratingLbs).toBe(1000);
+  });
+
+  it("seats the bay stations above the closed belly and leaves the others where they were", () => {
+    expect(STATIONS.filter(station => station.bay !== null).map(station => station.locationIn.z))
+      .toEqual([-11.03, -11.82, -11.82, -11.03]);
+    expect(STATIONS.filter(station => station.bay === null).map(station => station.locationIn.z))
+      .toEqual([-15.36, -15.36, -15.36, -44.89, -15.36, -15.36, -15.36]);
+  });
+
+  it("fits a mesh for every store a station carries, and mirrors it across a pair", () => {
+    for (const station of STATIONS) {
+      const fitted = Object.keys(STORE_MESH_FITS[station.place]).sort();
+      expect(fitted, station.label).toEqual(storesForStation(station.station).map(card => card.key).sort());
+    }
+    for (const station of [1, 2, 3, 4, 5]) {
+      for (const card of storesForStation(station)) {
+        const right = storeMeshPlacement(stationDefinition(station)!, card.key);
+        const left = storeMeshPlacement(stationDefinition(12 - station)!, card.key);
+        expect(left.x).toBeCloseTo(-right.x, 12);
+        expect([left.y, left.z, left.noseDownRad]).toEqual([right.y, right.z, right.noseDownRad]);
+      }
+    }
+    // Inboard of a wingtip is toward the centerline: +X is left.
+    expect(storeMeshPlacement(stationDefinition(1)!, "aim-9x").x).toBeCloseTo(0.244, 12);
+    expect(storeMeshPlacement(stationDefinition(11)!, "aim-9x").x).toBeCloseTo(-0.244, 12);
+    expect(storeMeshPlacement(stationDefinition(6)!, "aim-9x")).toEqual({ x: 0, y: 0, z: 0, noseDownRad: 0 });
   });
 });
 
@@ -73,16 +99,24 @@ describe("F-35B store catalog", () => {
     expect(assessPieces([{ station: 3, massLbs: 5000 }, { station: 9, massLbs: 5000 }])).toBeNull();
   });
 
-  it("builds the published presets and refuses rearm in the air or with the arm set", () => {
+  it("builds the published presets and refuses rearm with the arm set, or in the air when ground only", () => {
     const strike = loadFromPreset("usmc-strike")!;
     expect(weaponMassLbs(strike)).toBe(2 * 1013 + 2 * 356);
     expect(rearmRefusal(strike, GROUND)).toBeNull();
     expect(rearmRefusal(loadFromPreset("usmc-air-to-air")!, GROUND)).toBeNull();
     expect(rearmRefusal(loadFromPreset("uk")!, GROUND)).toBeNull();
     expect(rearmRefusal(loadFromPreset("clean")!, GROUND)).toBeNull();
-    expect(rearmRefusal(withStation(emptyLoad(), 1, "aim-9x"), { onGround: false, masterArm: false }))
+    const aim9x = withStation(emptyLoad(), 1, "aim-9x");
+    expect(rearmRefusal(aim9x, { groundOnly: false, onGround: false, masterArm: false })).toBeNull();
+    expect(rearmRefusal(strike, { groundOnly: false, onGround: false, masterArm: false })).toBeNull();
+    expect(rearmRefusal(aim9x, { groundOnly: true, onGround: false, masterArm: false }))
       .toBe("Rearm waits for weight on the wheels.");
-    expect(rearmRefusal(withStation(emptyLoad(), 1, "aim-9x"), { onGround: true, masterArm: true }))
+    expect(rearmRefusal(aim9x, { groundOnly: true, onGround: true, masterArm: false })).toBeNull();
+    for (const groundOnly of [false, true]) {
+      expect(rearmRefusal(aim9x, { groundOnly, onGround: true, masterArm: true }))
+        .toBe("Safe the master arm before changing the load.");
+    }
+    expect(rearmRefusal(aim9x, { groundOnly: false, onGround: false, masterArm: true }))
       .toBe("Safe the master arm before changing the load.");
     expect(storeByKey("aim-9x")?.dragAreaFt2).toBeCloseTo(0.136, 3);
     expect(storeByKey("asraam")?.dragAreaFt2).toBeCloseTo(0.233, 3);

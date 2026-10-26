@@ -208,14 +208,17 @@ export function assessPieces(pieces: readonly MassPiece[]): string | null {
 }
 
 export interface RearmContext {
+  /** The pilot's "Rearm on the ground only" setting, or a session rule that forces it on. */
+  groundOnly: boolean;
   onGround: boolean;
   masterArm: boolean;
   /** Index by station. True when that station's external tank is attached. */
   tankOnStation?: readonly boolean[];
 }
 
+/** Why the load cannot change now. Jettison and bay doors never ask. */
 export function rearmBlock(context: RearmContext): string | null {
-  if (!context.onGround) return "Rearm waits for weight on the wheels.";
+  if (context.groundOnly && !context.onGround) return "Rearm waits for weight on the wheels.";
   if (context.masterArm) return "Safe the master arm before changing the load.";
   return null;
 }

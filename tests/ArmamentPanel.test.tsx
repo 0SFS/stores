@@ -15,8 +15,8 @@ afterEach(async () => {
 
 function state(patch: Partial<ArmamentPanelState> = {}): ArmamentPanelState {
   return {
-    load: emptyLoad(), onGround: true, masterArm: false,
-    bayCmd: [0, 0], bayPos: [0, 0], tankOnStation: Array<boolean>(12).fill(false),
+    load: emptyLoad(), groundOnly: false, onGround: true, masterArm: false,
+    bayCmd: [0, 0], bayPos: [0, 0], bayQueued: [false, false], tankOnStation: Array<boolean>(12).fill(false),
     ...patch,
   };
 }
@@ -71,17 +71,19 @@ describe("Armament panel", () => {
     expect(strike).toBeTruthy();
   });
 
-  it("loads a preset, refuses a wing weapon while the tank is attached, and jettsions in the air", async () => {
+  it("waits for the wheels when rearm is ground only, refuses a wing weapon beside a tank, and jettisons in the air", async () => {
     const tank = Array<boolean>(12).fill(false);
     tank[3] = true;
     const loaded = emptyLoad();
     loaded[1] = "aim-9x";
     const { host, onLoad, onJettison, onDoor, onMasterArm } = await mount(state({
-      load: loaded, onGround: false, tankOnStation: tank,
+      load: loaded, groundOnly: true, onGround: false, tankOnStation: tank,
     }));
     const preset = [...host.querySelectorAll("button")].find(button => button.textContent === "USMC strike")!;
     expect(preset.disabled).toBe(true);
     expect(preset.title).toContain("wheels");
+    expect(select(host, "4 right bay").disabled).toBe(true);
+    expect(host.textContent).toContain("Rearm waits for the wheels and a safe master arm.");
     const paveway = [...select(host, "3 right inboard").options].find(option => option.value === "paveway-iv")!;
     expect(paveway.disabled).toBe(true);
     expect(paveway.textContent).toContain("external tank");
@@ -97,6 +99,42 @@ describe("Armament panel", () => {
     });
     expect(onMasterArm).toHaveBeenCalledWith(true);
     expect(onLoad).not.toHaveBeenCalled();
+  });
+
+  it("rearms in the air by default; the master arm still blocks it, jettison and doors stay", async () => {
+    const loaded = emptyLoad();
+    loaded[1] = "aim-9x";
+    const { host, onLoad, onJettison, onDoor } = await mount(state({ load: loaded, onGround: false }));
+    expect(host.textContent).toContain("Rearm waits for a safe master arm.");
+    expect(host.textContent).not.toContain("wheels");
+    const preset = [...host.querySelectorAll("button")].find(button => button.textContent === "USMC strike")!;
+    expect(preset.disabled).toBe(false);
+    await act(async () => { preset.click(); });
+    expect(onLoad).toHaveBeenCalledWith(loadFromPreset("usmc-strike"));
+    expect(select(host, "4 right bay").value).toBe("gbu-32");
+
+    await act(async () => { host.querySelector<HTMLInputElement>('input[aria-label="Master arm"]')!.click(); });
+    const uk = [...host.querySelectorAll("button")].find(button => button.textContent === "UK")!;
+    expect(uk.disabled).toBe(true);
+    expect(uk.title).toContain("master arm");
+    expect(select(host, "4 right bay").disabled).toBe(true);
+    const jettison = host.querySelector<HTMLButtonElement>('button[aria-label="Jettison station 4"]')!;
+    expect(jettison.disabled).toBe(false);
+    await act(async () => { jettison.click(); });
+    expect(onJettison).toHaveBeenCalledWith(4);
+    const door = host.querySelector<HTMLButtonElement>('button[aria-label="Left bay door"]')!;
+    expect(door.disabled).toBe(false);
+    await act(async () => { door.click(); });
+    expect(onDoor).toHaveBeenCalledWith(1, true);
+    expect(onLoad).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows a bay open waiting for the gear, and a press takes it back", async () => {
+    const { host, onDoor } = await mount(state({ bayQueued: [false, true] }));
+    const door = host.querySelector<HTMLButtonElement>('button[aria-label="Left bay door"]')!;
+    expect(door.textContent).toBe("Left bay shut (waiting for the gear)");
+    await act(async () => { door.click(); });
+    expect(onDoor).toHaveBeenCalledWith(1, false);
   });
 
   it("applies the USMC strike preset on the ground with the arm safe", async () => {
