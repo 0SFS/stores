@@ -3,15 +3,6 @@ import { stationDefinition, type StationDefinition } from "./stationTable";
 /** Weapons only. Fuel and the tanks' dry mass stay out of this sum. */
 export const WEAPON_PAYLOAD_LIMIT_LBS = 15_000;
 
-/** Frontal disk at Cd = 1, rounded to 0.001 ft². A stand-in drag, not a measured Cd. */
-function diskFt2(diameterIn: number): number {
-  const radiusFt = diameterIn / 24;
-  return Math.round(Math.PI * radiusFt * radiusFt * 1000) / 1000;
-}
-
-/** 14 in body used where a diameter was not published. See Stores.NOTICE.md. */
-const STAND_IN_DIAMETER_M = 14 * 0.0254;
-
 export interface StoreCard {
   /**
    * Integer written to `stores/station[n]/store-id`. Do not renumber: saved
@@ -38,89 +29,67 @@ export interface StoreCard {
   massNote: string | null;
 }
 
-const AIM_120_MASS_LBS = 356;
-const GBU_32_MASS_LBS = 1013;
-const GUN_POD_MASS_LBS = 1017;
+/** Filled from payload mods. Station clearances come from the aircraft that hangs them. */
+export const STORE_CARDS: StoreCard[] = [];
 
-export const STORE_CARDS: readonly StoreCard[] = [
-  {
-    id: 1, key: "aim-120", label: "AIM-120", massLbs: AIM_120_MASS_LBS,
-    dragAreaFt2: diskFt2(7), stations: [4, 5, 7, 8], selectable: true, refusal: null,
-    ratingException: { stations: [5, 7], cellLbs: 350 },
-    lengthM: 12 * 0.3048, diameterM: 7 * 0.0254, spanM: 19 * 0.0254, boxM: null,
-    meshStandIn: false, rounds: null,
-    massNote: "356 lb is the Navy fact file. NAVAIR prints 358 lb for the D.",
-  },
-  {
-    id: 2, key: "gbu-12", label: "GBU-12", massLbs: 500, dragAreaFt2: 1,
-    stations: [4, 8], selectable: true, refusal: null, ratingException: null,
-    lengthM: (10 * 12 + 9) * 0.0254, diameterM: STAND_IN_DIAMETER_M, spanM: null, boxM: null,
-    meshStandIn: true, rounds: null,
-    massNote: "500 lb is the class figure. The caption does not split body from fin.",
-  },
-  {
-    id: 3, key: "gbu-32", label: "GBU-32", massLbs: GBU_32_MASS_LBS, dragAreaFt2: 1,
-    stations: [4, 8], selectable: true, refusal: null, ratingException: null,
-    lengthM: 119.5 * 0.0254, diameterM: STAND_IN_DIAMETER_M, spanM: 19.6 * 0.0254, boxM: null,
-    meshStandIn: true, rounds: null,
-    massNote: "1,013 lb. The bay is described as the 1,000 lb class, and stations 4 and 8 are rated 1,500 lb.",
-  },
-  {
-    id: 4, key: "aim-9x", label: "AIM-9X", massLbs: 186, dragAreaFt2: diskFt2(5),
-    stations: [1, 11, 2, 10], selectable: true, refusal: null, ratingException: null,
-    lengthM: 9.9 * 0.3048, diameterM: 5 * 0.0254, spanM: 17.6 * 0.0254, boxM: null,
-    meshStandIn: false, rounds: null, massNote: null,
-  },
-  {
-    id: 5, key: "asraam", label: "ASRAAM", massLbs: 194, dragAreaFt2: diskFt2(166 / 25.4),
-    stations: [1, 11, 2, 10], selectable: true, refusal: null, ratingException: null,
-    lengthM: 2.9, diameterM: 0.166, spanM: null, boxM: null,
-    meshStandIn: false, rounds: null,
-    massNote: "88 kg, taken as 194 lb. Fin span is unpublished, so the mesh is the body.",
-  },
-  {
-    id: 6, key: "paveway-iv", label: "Paveway IV", massLbs: 500, dragAreaFt2: 1,
-    stations: [4, 8, 2, 3, 9, 10], selectable: true, refusal: null, ratingException: null,
-    lengthM: 10 * 0.3048, diameterM: STAND_IN_DIAMETER_M, spanM: null, boxM: null,
-    meshStandIn: true, rounds: null,
-    massNote: "500 lb is the class figure. Length and diameter are unpublished.",
-  },
-  {
-    id: 7, key: "gau-22-pod", label: "GAU-22/A pod", massLbs: GUN_POD_MASS_LBS, dragAreaFt2: 6,
-    stations: [6], selectable: true, refusal: null,
-    ratingException: { stations: [6], cellLbs: 1000 },
-    lengthM: null, diameterM: null, spanM: null,
-    boxM: { length: 146 * 0.0254, width: 27 * 0.0254, height: 32 * 0.0254 },
-    meshStandIn: false, rounds: 220,
-    massNote: "1,017 lb loaded. The centerline cell is 1,000 lb. Empty weight is unpublished, so the pod stays 1,017 lb.",
-  },
-  refused("gbu-31", "GBU-31", "GBU-31 is a 2,000 lb store. This bay is the 1,000 lb class."),
-  refused("jsm", "JSM", "JSM is not a selectable F-35B store."),
-  refused("sidekick", "Sidekick", "Sidekick is an adapter, not a store on this jet."),
-  refused("b61-12", "B61-12", "B61-12 is not carried in this simulator."),
-  refused("aim-260", "AIM-260", "AIM-260 is not a selectable F-35B store."),
-  refused("meteor", "Meteor", "Meteor is not a selectable F-35B store."),
-  refused("spear-3", "SPEAR 3", "SPEAR 3 is not a selectable F-35B store."),
-  refused("stormbreaker", "StormBreaker", "StormBreaker is not a selectable F-35B store."),
-];
+const byKey = () => new Map(STORE_CARDS.map(card => [card.key, card]));
+const byId = () => new Map(STORE_CARDS.filter(card => card.selectable && card.id !== 0).map(card => [card.id, card]));
 
-function refused(key: string, label: string, refusal: string): StoreCard {
-  return {
+export interface PayloadStoreRegistration {
+  id: number;
+  key: string;
+  label: string;
+  massLbs: number;
+  dragAreaFt2: number;
+  lengthM: number | null;
+  diameterM: number | null;
+  spanM: number | null;
+  boxM: StoreCard["boxM"];
+  meshStandIn: boolean;
+  rounds: number | null;
+  massNote: string | null;
+}
+
+function upsert(card: StoreCard): void {
+  const index = STORE_CARDS.findIndex(item => item.key === card.key);
+  if (index >= 0) STORE_CARDS[index] = card;
+  else STORE_CARDS.push(card);
+}
+
+/** Registers one weapon, pod or other store. Stations stay empty until an aircraft clears them. */
+export function registerPayloadStore(store: PayloadStoreRegistration): void {
+  const existing = STORE_CARDS.find(item => item.key === store.key);
+  upsert({
+    ...store,
+    stations: existing?.stations ?? [],
+    selectable: existing?.selectable ?? true,
+    refusal: existing?.refusal ?? null,
+    ratingException: existing?.ratingException ?? null,
+  });
+}
+
+/** The aircraft says which of its stations may carry this payload, and any published rating exception. */
+export function applyStoreClearance(key: string, stations: readonly number[], ratingException: StoreCard["ratingException"]): void {
+  const existing = STORE_CARDS.find(item => item.key === key);
+  if (!existing) return;
+  upsert({ ...existing, stations: [...stations], selectable: true, refusal: null, ratingException });
+}
+
+/** A card the aircraft shows but will not load. Id 0 is never written to a saved flight. */
+export function registerRefusedStore(key: string, label: string, refusal: string): void {
+  upsert({
     id: 0, key, label, massLbs: 0, dragAreaFt2: 0, stations: [], selectable: false, refusal,
     ratingException: null, lengthM: null, diameterM: null, spanM: null, boxM: null,
     meshStandIn: false, rounds: null, massNote: null,
-  };
+  });
 }
 
-const BY_KEY = new Map(STORE_CARDS.map(card => [card.key, card]));
-const BY_ID = new Map(STORE_CARDS.filter(card => card.selectable).map(card => [card.id, card]));
-
 export function storeByKey(key: string): StoreCard | undefined {
-  return BY_KEY.get(key);
+  return byKey().get(key);
 }
 
 export function storeById(id: number): StoreCard | undefined {
-  return id === 0 ? undefined : BY_ID.get(id);
+  return id === 0 ? undefined : byId().get(id);
 }
 
 export function storesForStation(station: number): readonly StoreCard[] {
@@ -134,12 +103,11 @@ export interface StorePreset {
   stations: Readonly<Record<number, string>>;
 }
 
-export const STORE_PRESETS: readonly StorePreset[] = [
-  { id: "clean", label: "Clean", stations: {} },
-  { id: "usmc-strike", label: "USMC strike", stations: { 4: "gbu-32", 8: "gbu-32", 5: "aim-120", 7: "aim-120" } },
-  { id: "usmc-air-to-air", label: "USMC air-to-air", stations: { 4: "aim-120", 5: "aim-120", 7: "aim-120", 8: "aim-120" } },
-  { id: "uk", label: "UK", stations: { 4: "paveway-iv", 8: "paveway-iv", 1: "asraam", 11: "asraam" } },
-];
+export const STORE_PRESETS: StorePreset[] = [];
+
+export function registerStorePresets(presets: readonly StorePreset[]): void {
+  STORE_PRESETS.splice(0, STORE_PRESETS.length, ...presets);
+}
 
 /** Index 0 is unused. Index n is station n's store key, or null when empty. */
 export function emptyLoad(): (string | null)[] {

@@ -3,7 +3,7 @@
  * +Z up. The same reference the external tanks use. This package does not
  * import the fuel package; the fly app coordinates the two.
  */
-export const F35B_STRUCTURAL_REFERENCE_IN = { x: 368.52, y: 0, z: -15.36 } as const;
+export const F35B_STRUCTURAL_REFERENCE_IN: { x: number; y: number; z: number } = { x: 368.52, y: 0, z: -15.36 };
 
 /** Flight body on `aircraft.modelRoot`: +X left, +Y up, +Z forward. */
 export function bodyMetersFromStructural(locationIn: { x: number; y: number; z: number }): { x: number; y: number; z: number } {
@@ -226,13 +226,42 @@ export const BAY_DOOR_FIT = {
  * about 47 degrees on; the travel is not shortened to hide that, and no pod
  * clearance is claimed.
  */
-export const DOOR_OPEN_RAD = 97 * Math.PI / 180;
+export let DOOR_OPEN_RAD = 97 * Math.PI / 180;
 
 /**
  * Development stand-in for an unpublished slew. The plant kinematic uses this
  * same 1.5 s. It is not a measured door time.
  */
-export const DOOR_FULL_TRAVEL_SECONDS = 1.5;
+export let DOOR_FULL_TRAVEL_SECONDS = 1.5;
 
 /** An internal store stays hidden until the door has opened this far. */
-export const INTERNAL_STORE_VISIBLE_AT = 0.2;
+export let INTERNAL_STORE_VISIBLE_AT = 0.2;
+
+export interface PayloadInstallationRegistration {
+  structuralReferenceIn: { x: number; y: number; z: number };
+  stations: readonly StationDefinition[];
+  meshFits: typeof STORE_MESH_FITS;
+  bays: readonly BayDefinition[];
+  bayDoorFit: typeof BAY_DOOR_FIT;
+  doorOpenRad: number;
+  doorFullTravelSeconds: number;
+  internalStoreVisibleAt: number;
+}
+
+/** Replaces the station, mesh-fit and bay-door tables with an aircraft mod's installation. */
+export function registerPayloadInstallation(installation: PayloadInstallationRegistration): void {
+  Object.assign(F35B_STRUCTURAL_REFERENCE_IN, installation.structuralReferenceIn);
+  const stations = STATIONS as StationDefinition[];
+  stations.splice(0, stations.length, ...installation.stations);
+  for (const place of Object.keys(STORE_MESH_FITS) as (keyof typeof STORE_MESH_FITS)[]) {
+    const target = STORE_MESH_FITS[place] as Record<string, StoreMeshFit>;
+    for (const key of Object.keys(target)) delete target[key];
+    Object.assign(target, installation.meshFits[place]);
+  }
+  const bays = BAYS as BayDefinition[];
+  bays.splice(0, bays.length, ...installation.bays);
+  Object.assign(BAY_DOOR_FIT, installation.bayDoorFit);
+  DOOR_OPEN_RAD = installation.doorOpenRad;
+  DOOR_FULL_TRAVEL_SECONDS = installation.doorFullTravelSeconds;
+  INTERNAL_STORE_VISIBLE_AT = installation.internalStoreVisibleAt;
+}
