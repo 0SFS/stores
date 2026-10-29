@@ -85,3 +85,12 @@ export function writeBayDoor(sdk: StorePropertyAccess, bay: 0 | 1, open: boolean
 export function writeMasterArm(sdk: StorePropertyAccess, armed: boolean): void {
   sdk.setPropertyValue("stores/master-arm", armed ? 1 : 0);
 }
+
+export function writeGunRounds(sdk: StorePropertyAccess, rounds: number): void {
+  sdk.setPropertyValue("stores/gun/rounds", rounds);
+}
+
+/** 1 while a round is leaving the pod. The flight model turns that into recoil. */
+export function writeGunFiring(sdk: StorePropertyAccess, firing: boolean): void {
+  sdk.setPropertyValue("stores/gun/firing", firing ? 1 : 0);
+}
