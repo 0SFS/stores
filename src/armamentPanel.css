@@ -14,15 +14,20 @@
 }
 
 .flight-armament__station {
-  display: grid;
-  /* Fits the default desktop panel: a long station name wraps rather than push Jettison out. */
-  grid-template-columns: minmax(0, 1.4fr) minmax(7rem, 1fr) auto auto;
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+  padding: 8px;
+  margin-bottom: 6px;
+  border: 1px solid rgba(127, 143, 163, 0.3);
+  border-radius: 6px;
 }
 
 .flight-armament__station select {
   min-width: 0;
+  width: max-content;
+  max-width: 100%;
 }
 
 .flight-armament label {

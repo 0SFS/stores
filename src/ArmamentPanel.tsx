@@ -1,6 +1,8 @@
 import "./armamentPanel.css";
+import { HelpTip } from "foss-earth/shell";
 
 import { STATIONS } from "./stationTable";
+import { isFireableWeapon } from "./armamentControls";
 import {
   STORE_PRESETS, loadFromPreset, loadRefusal, rearmBlock, rearmRefusal, storesForStation,
   weaponMassLbs, withAim9x, withGunPod, withStation, WEAPON_PAYLOAD_LIMIT_LBS,
@@ -19,8 +21,9 @@ export interface ArmamentPanelState {
   bayQueued: readonly [boolean, boolean];
   /** Index by station. True when that station's external tank is attached. */
   tankOnStation: readonly boolean[];
-  /** The missile a press will launch. */
+  /** The next station of the selected weapon type. */
   selectedStation?: number | null;
+  selectedWeaponKey?: string | null;
 }
 
 export interface ArmamentPanelProps {
@@ -30,6 +33,7 @@ export interface ArmamentPanelProps {
   onDoor(bay: 0 | 1, open: boolean): void;
   onMasterArm(armed: boolean): void;
   onSelect?(station: number): void;
+  onSelectWeapon?(key: string): void;
 }
 
 /**
@@ -37,7 +41,7 @@ export interface ArmamentPanelProps {
  * rearm is ground only. Jettison and the bay doors work in the air either way;
  * the doors wait for the landing gear to rest.
  */
-export function ArmamentPanel({ state, onLoad, onJettison, onDoor, onMasterArm, onSelect }: ArmamentPanelProps) {
+export function ArmamentPanel({ state, onLoad, onJettison, onDoor, onMasterArm, onSelect, onSelectWeapon }: ArmamentPanelProps) {
   const context: RearmContext = {
     groundOnly: state.groundOnly, onGround: state.onGround, masterArm: state.masterArm,
     tankOnStation: state.tankOnStation,
@@ -53,9 +57,15 @@ export function ArmamentPanel({ state, onLoad, onJettison, onDoor, onMasterArm, 
       <p className="flight-panel__hint">
         {mass.toLocaleString("en-US")} lb of weapons, of {WEAPON_PAYLOAD_LIMIT_LBS.toLocaleString("en-US")} lb.
         Rearm waits for {state.groundOnly ? "the wheels and " : ""}a safe master arm.
-        Jettison drops the store, armed or safe.
-        With the master arm on, Space or the right bumper fires the gun, and a press launches the selected missile.
-        Y selects the next missile. An internal missile waits for its bay door.
+        {" "}<HelpTip label="Explain armament loadout and firing">
+          Jettison drops the store, armed or safe. With the master arm on, Fire on the widget,
+          Space or the right bumper uses only the selected weapon type. Hold for the gun;
+          press once per missile. Y or the left bumper selects the next loaded weapon type.
+          Selecting a station chooses its type; the first remaining station fires next.
+          An internal missile opens its bay and launches when ready, even after Fire is released.
+          Cancel on the widget, SAFE or changing type cancels a queued launch.
+          Bomb release is unavailable.
+        </HelpTip>
       </p>
       <div className="flight-armament__row">
         <label>
@@ -108,6 +118,9 @@ export function ArmamentPanel({ state, onLoad, onJettison, onDoor, onMasterArm, 
       <div>
         {STATIONS.map(station => {
           const current = state.load[station.station] ?? null;
+          const selected = state.selectedWeaponKey !== undefined
+            ? current !== null && current === state.selectedWeaponKey
+            : state.selectedStation === station.station;
           return (
             <div key={station.station} className="flight-armament__station">
               <span>{station.label}</span>
@@ -129,11 +142,14 @@ export function ArmamentPanel({ state, onLoad, onJettison, onDoor, onMasterArm, 
                 Jettison
               </button>
               <button type="button"
-                disabled={current !== "aim-120" && current !== "aim-9x" && current !== "asraam"}
-                aria-pressed={state.selectedStation === station.station}
+                disabled={!isFireableWeapon(current)}
+                aria-pressed={selected}
                 aria-label={`Select station ${station.station}`}
-                onClick={() => onSelect?.(station.station)}>
-                {state.selectedStation === station.station ? "Selected" : "Select"}
+                onClick={() => {
+                  if (current && onSelectWeapon) onSelectWeapon(current);
+                  else onSelect?.(station.station);
+                }}>
+                {selected ? "Selected" : current && !isFireableWeapon(current) ? "Release unavailable" : "Select"}
               </button>
             </div>
           );

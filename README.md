@@ -1,8 +1,8 @@
 # Stores
 
-Hung weapons for the F-35B: the catalog, the station table, and the Armament panel.
+Hung weapons for the F-35B: the catalog, station table, Armament panel and compact flight widget.
 
-Nothing leaves the rail here. Release, the gun, and missile flight are a later phase.
+The widget shows the aircraft's stations, selected weapon type, remaining ammunition and readiness, with SAFE / ARM and Fire controls. The flight runtime supplies firing and queued bay-launch behavior; this package shares the presentation and selection rules. Gun and missile firing are supported. Carried bombs display **Release unavailable**.
 
 The fly app depends on this package and runs its tests. From the `fly` directory, `npm test` includes them.
 

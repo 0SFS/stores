@@ -145,4 +145,23 @@ describe("Armament panel", () => {
     expect(select(host, "4 right bay").value).toBe("gbu-32");
     expect(select(host, "5 right bay").value).toBe("aim-120");
   });
+
+  it("selects gun or missile types and marks every matching station selected", async () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    roots.push(root);
+    const loaded = emptyLoad();
+    loaded[1] = loaded[11] = "aim-9x";
+    loaded[6] = "gau-22-pod";
+    const onSelectWeapon = vi.fn();
+    await act(async () => root.render(<ArmamentPanel state={state({ load: loaded, selectedWeaponKey: "aim-9x", selectedStation: 1 })}
+      onLoad={vi.fn()} onJettison={vi.fn()} onDoor={vi.fn()} onMasterArm={vi.fn()} onSelectWeapon={onSelectWeapon} />));
+    expect(host.querySelector('[aria-label="Select station 1"]')?.getAttribute("aria-pressed")).toBe("true");
+    expect(host.querySelector('[aria-label="Select station 11"]')?.getAttribute("aria-pressed")).toBe("true");
+    const gun = host.querySelector<HTMLButtonElement>('[aria-label="Select station 6"]')!;
+    expect(gun.disabled).toBe(false);
+    await act(async () => gun.click());
+    expect(onSelectWeapon).toHaveBeenCalledWith("gau-22-pod");
+  });
 });

@@ -6,6 +6,14 @@
   "license": "AGPL-3.0-only",
   "type": "module",
   "exports": {
+    "./armamentControls": {
+      "source": "./src/armamentControls.ts",
+      "default": "./src/armamentControls.ts"
+    },
+    "./armamentWidget": {
+      "source": "./src/armamentWidget.ts",
+      "default": "./src/armamentWidget.ts"
+    },
     "./storeCatalog": {
       "source": "./src/storeCatalog.ts",
       "default": "./src/storeCatalog.ts"
@@ -46,9 +54,13 @@
   },
   "peerDependencies": {
     "@babylonjs/core": "8.56.2",
+    "foss-earth": "0.1.0",
     "react": "19.2.6"
   },
   "peerDependenciesMeta": {
+    "foss-earth": {
+      "optional": true
+    },
     "@babylonjs/core": {
       "optional": true
     },

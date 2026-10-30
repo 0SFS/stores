@@ -1,0 +1,77 @@
+.flight-armament-widget {
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(100%, calc(100vw - 24px));
+  padding: 4px 7px 3px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #e8edf5;
+  font: 11px "SF Mono", "Menlo", "Consolas", monospace;
+  font-variant-numeric: tabular-nums;
+  pointer-events: auto;
+}
+.flight-armament-widget [hidden] { display: none; }
+.flight-armament-widget button {
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  background: rgba(16, 23, 32, 0.92);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.flight-armament-widget button:disabled { opacity: 0.45; cursor: default; }
+.flight-armament-widget button:focus-visible { outline: 2px solid #e8b647; outline-offset: 2px; }
+.flight-armament-widget button:hover:not(:disabled) { border-color: #e8edf5; }
+.flight-armament-widget__header { display: flex; gap: 9px; align-items: center; justify-content: space-between; }
+.flight-armament-widget .flight-armament-widget__title { padding: 2px 0; border: 0; background: none; font-weight: 700; }
+.flight-armament-widget__arming { display: inline-flex; border: 1px solid #5c6774; border-radius: 5px; overflow: hidden; }
+.flight-armament-widget__arming button { padding: 2px 6px; border: 0; border-radius: 0; font-size: 9px; }
+.flight-armament-widget__arming button[aria-pressed="true"] { background: #364655; }
+.flight-armament-widget__arming button:last-child[aria-pressed="true"] { background: #ad3c29; color: white; }
+.flight-armament-widget__body { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.flight-armament-widget__diagram { position: relative; width: 160px; height: 108px; flex: none; }
+.flight-armament-widget__diagram svg { width: 100%; height: 100%; fill: #1d2b3b; stroke: #788b9f; stroke-width: 0.8; }
+.flight-armament-widget .flight-armament-widget__station {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  color: #9aa8b7;
+  font-size: 9px;
+}
+.flight-armament-widget__station[data-loaded="false"] { background: #101820; border-color: #62707e; }
+.flight-armament-widget__station[data-loaded="true"] { color: #e8edf5; background: #344356; }
+.flight-armament-widget__station[data-unsupported="true"] { border-style: dashed; }
+.flight-armament-widget__station[aria-pressed="true"] { background: #285f73; border-color: #75d7ed; }
+.flight-armament-widget__station[data-next="true"] { outline: 2px solid #e8b647; outline-offset: 1px; }
+.flight-armament-widget__station[data-pending="true"] { background: #755615; }
+.flight-armament-widget__controls { display: flex; flex-direction: column; align-items: stretch; gap: 4px; min-width: 98px; }
+.flight-armament-widget__selection { display: flex; gap: 4px; align-items: center; }
+.flight-armament-widget__selection button { width: 23px; min-height: 24px; padding: 0; font-size: 18px; }
+.flight-armament-widget__name { min-width: 6ch; text-align: center; font-weight: 700; }
+.flight-armament-widget__count, .flight-armament-widget__status { text-align: center; font-size: 10px; }
+.flight-armament-widget__count { color: #b1bfce; }
+.flight-armament-widget[data-status="ready"] .flight-armament-widget__status { color: #a3e5b5; }
+.flight-armament-widget[data-status="opening-bay"] .flight-armament-widget__status,
+.flight-armament-widget[data-status="waiting-for-gear"] .flight-armament-widget__status { color: #f3cb71; }
+.flight-armament-widget .flight-armament-widget__fire { min-height: 32px; background: #8b3025; font-weight: 700; touch-action: none; }
+.flight-armament-widget .flight-armament-widget__fire[aria-pressed="true"] { background: #bb4838; }
+.flight-armament-widget__cancel { min-height: 32px; }
+.flight-armament-widget__footer { display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-height: 17px; }
+.flight-armament-widget__footer .foss-earth-parameter__help-button { min-width: 19px; min-height: 19px; padding: 0; font-size: 10px; }
+.flight-armament-widget__unavailable { margin-right: auto; color: #c4b99d; font-size: 9px; }
+@media (pointer: coarse) {
+  .flight-armament-widget__diagram { width: 160px; height: 120px; }
+  .flight-armament-widget .flight-armament-widget__station { width: 26px; height: 26px; }
+  .flight-armament-widget__body { justify-content: center; }
+  .flight-armament-widget__controls { flex: 1; }
+  .flight-armament-widget .flight-armament-widget__fire,
+  .flight-armament-widget__cancel { min-height: 44px; }
+  .flight-armament-widget__arming button { min-height: 28px; }
+  .flight-armament-widget__selection button { min-height: 30px; width: 30px; }
+}
